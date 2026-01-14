@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio | Creative Developer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neon': '#ccff00', // Une version plus acide du vert
+                        'dark': '#050505',
+                        'light': '#f4f4f5',
+                    },
+                    fontFamily: {
+                        sans: ['"Space Grotesk"', 'sans-serif'],
+                        mono: ['"Space Mono"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- GSAP & Plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
+    
+    <!-- Lenis (Smooth Scroll) -->
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.19/bundled/lenis.min.js"></script>
+    
+    <!-- Icons & Fonts -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --cursor-size: 20px;
+            --cursor-stroke: 40px;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            overflow-x: hidden;
+            cursor: none; /* On cache le curseur par défaut */
+        }
+
+        /* Effet de bruit global */
+        .noise-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9000;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Curseur Personnalisé */
+        .cursor-dot {
+            width: var(--cursor-size);
+            height: var(--cursor-size);
+            background-color: var(--neon);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+        .cursor-stroke {
+            width: var(--cursor-stroke);
+            height: var(--cursor-stroke);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background-color 0.3s;
+        }
+
+        /* Utilitaires d'animation de texte (Split Text) */
+        .char { display: inline-block; transform: translateY(110%); opacity: 0; }
+        .word { display: inline-block; white-space: nowrap; overflow: hidden; }
+        
+        /* Loader */
+        .loader-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--neon); z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+        }
+        
+        /* Project Cards Hover States */
+        .project-image-wrapper {
+            overflow: hidden;
+            will-change: transform;
+        }
+        .project-image {
+            transition: transform 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        .project-card:hover .project-image {
+            transform: scale(1.1);
+        }
+
+        /* Masquage scrollbar horizontal */
+        .horizontal-scroll-container {
+            overflow-x: hidden;
+        }
+        
+        /* Mode de blend pour le nav */
+        .nav-blend { mix-blend-mode: difference; }
+    </style>
+</head>
+<body class="antialiased selection:bg-neon selection:text-black">
+
+    <!-- Overlays -->
+    <div class="noise-overlay"></div>
+    <div class="cursor-dot"></div>
+    <div class="cursor-stroke"></div>
+    <div class="loader-screen">
+        <div class="text-black font-bold text-4xl tracking-tighter mix-blend-screen">
+            DEV.STUDIO
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full top-0 left-0 z-50 p-6 md:p-8 flex justify-between items-center nav-blend text-white">
+        <a href="#" class="text-xl font-bold tracking-tighter uppercase magnetic-btn">Dev.Studio</a>
+        
+        <div class="hidden md:flex gap-8 text-xs font-mono uppercase tracking-widest">
+            <a href="#work" class="magnetic-btn relative overflow-hidden group">
+                <span class="block transition-transform duration-300 group-hover:-translate-y-full">Projets</span>
+                <span class="absolute top-0 left-0 transition-transform duration-300 translate-y-full group-hover:translate-y-0 text-neon">Projets</span>
+            </a>
+            <a href="#expertise" class="magnetic-btn relative overflow-hidden group">
+                <span class="block transition-transform duration-300 group-hover:-translate-y-full">Expertise</span>
+                <span class="absolute top-0 left-0 transition-transform duration-300 translate-y-full group-hover:translate-y-0 text-neon">Expertise</span>
+            </a>
+            <a href="mailto:contact@dev.studio" class="magnetic-btn border border-white/20 px-4 py-2 rounded-full hover:bg-white hover:text-black transition-colors">
+                Disponible
+            </a>
+        </div>
+
+        <!-- Menu Mobile Toggle -->
+        <button class="md:hidden magnetic-btn">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="h-screen w-full flex flex-col justify-center px-6 md:px-20 relative">
+            <div class="absolute top-1/2 right-10 md:right-20 -translate-y-1/2 hidden md:block">
+                <div class="flex flex-col gap-4 text-right font-mono text-xs text-gray-500">
+                    <span>SCROLL TO EXPLORE</span>
+                    <div class="w-px h-24 bg-neon/50 mx-auto animate-pulse"></div>
+                </div>
+            </div>
+
+            <!-- Titre animé avec SplitText simulé -->
+            <h1 class="hero-title text-[14vw] md:text-[10vw] leading-[0.85] font-bold uppercase tracking-tighter mix-blend-overlay opacity-90">
+                <div class="overflow-hidden"><span class="block">Creative</span></div>
+                <div class="overflow-hidden"><span class="block text-neon italic ml-[10vw]">Developer</span></div>
+            </h1>
+
+            <div class="mt-12 flex flex-col md:flex-row justify-between items-start md:items-end max-w-4xl hero-sub">
+                <p class="reveal-text text-gray-400 max-w-md font-mono text-sm md:text-base leading-relaxed border-l-2 border-neon pl-4">
+                    Je conçois des expériences numériques radicales. 
+                    Fusion entre code performant et design directionnel.
+                </p>
+                
+                <div class="mt-8 md:mt-0">
+                    <div class="text-xs font-mono uppercase text-neon mb-2">Status actuel</div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        <span class="font-bold">Open for work</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Marquee (Infinite Scroll) -->
+        <div class="py-12 border-y border-white/10 bg-neutral-900/50 backdrop-blur-sm overflow-hidden">
+            <div class="marquee-wrapper flex whitespace-nowrap">
+                <h2 class="marquee-item text-[8vw] font-bold uppercase text-transparent stroke-text mr-8">
+                    Web Design — Development — UI/UX — Motion — 
+                </h2>
+                <h2 class="marquee-item text-[8vw] font-bold uppercase text-transparent stroke-text mr-8">
+                    Web Design — Development — UI/UX — Motion —
+                </h2>
+                <h2 class="marquee-item text-[8vw] font-bold uppercase text-transparent stroke-text mr-8">
+                    Web Design — Development — UI/UX — Motion —
+                </h2>
+            </div>
+        </div>
+
+        <!-- Expertise Section (Horizontal Scroll) -->
+        <section id="expertise" class="horizontal-scroll-container h-screen relative bg-neutral-900">
+            <div class="absolute top-10 left-6 md:left-20 z-10">
+                <span class="text-neon font-mono text-xs border border-neon px-2 py-1 rounded">01 — EXPERTISE</span>
+            </div>
+            
+            <!-- Le conteneur qui va bouger -->
+            <div class="horizontal-track flex h-full items-center pl-6 md:pl-20">
+                
+                <div class="flex-shrink-0 w-[80vw] md:w-[50vw] pr-12 flex flex-col justify-center">
+                    <h2 class="text-6xl md:text-8xl font-bold mb-6">Stack<br><span class="text-gray-600">Technique</span></h2>
+                    <p class="text-gray-400 max-w-sm font-mono text-sm">
+                        Une sélection rigoureuse d'outils modernes pour garantir rapidité, maintenance et évolutivité.
+                    </p>
+                </div>
+
+                <!-- Carte 1 -->
+                <div class="skill-card flex-shrink-0 w-[70vw] md:w-[400px] h-[50vh] md:h-[60vh] bg-[#111] border border-white/10 p-8 rounded-2xl mr-8 hover:border-neon/50 transition-colors duration-500 group">
+                    <div class="w-full h-full flex flex-col justify-between">
+                        <div>
+                            <i data-lucide="layout" class="w-10 h-10 text-neon mb-4"></i>
+                            <h3 class="text-3xl font-bold mb-2 group-hover:text-neon transition-colors">Frontend</h3>
+                            <p class="text-gray-500 text-sm">Architecture fluide et réactive.</p>
+                        </div>
+                        <ul class="font-mono text-xs text-gray-400 space-y-2">
+                            <li>HTML5 / CSS3 (Tailwind)</li>
+                            <li>JavaScript (ES6+)</li>
+                            <li>Vue.js / React</li>
+                            <li>GSAP / Three.js</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Carte 2 -->
+                <div class="skill-card flex-shrink-0 w-[70vw] md:w-[400px] h-[50vh] md:h-[60vh] bg-[#111] border border-white/10 p-8 rounded-2xl mr-8 hover:border-neon/50 transition-colors duration-500 group">
+                    <div class="w-full h-full flex flex-col justify-between">
+                        <div>
+                            <i data-lucide="server" class="w-10 h-10 text-neon mb-4"></i>
+                            <h3 class="text-3xl font-bold mb-2 group-hover:text-neon transition-colors">Backend</h3>
+                            <p class="text-gray-500 text-sm">Logique métier robuste et sécurisée.</p>
+                        </div>
+                        <ul class="font-mono text-xs text-gray-400 space-y-2">
+                            <li>Python</li>
+                            <li>Laravel (PHP)</li>
+                            <li>Node.js</li>
+                            <li>SQL / PostgreSQL</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Carte 3 -->
+                <div class="skill-card flex-shrink-0 w-[70vw] md:w-[400px] h-[50vh] md:h-[60vh] bg-[#111] border border-white/10 p-8 rounded-2xl mr-8 hover:border-neon/50 transition-colors duration-500 group">
+                    <div class="w-full h-full flex flex-col justify-between">
+                        <div>
+                            <i data-lucide="smartphone" class="w-10 h-10 text-neon mb-4"></i>
+                            <h3 class="text-3xl font-bold mb-2 group-hover:text-neon transition-colors">Mobile</h3>
+                            <p class="text-gray-500 text-sm">Applications natives performantes.</p>
+                        </div>
+                        <ul class="font-mono text-xs text-gray-400 space-y-2">
+                            <li>Flutter (Dart)</li>
+                            <li>React Native</li>
+                            <li>iOS / Android</li>
+                        </ul>
+                    </div>
+                </div>
+
+                 <!-- Fin de scroll -->
+                 <div class="flex-shrink-0 w-[20vw] md:w-[10vw] flex items-center justify-center">
+                    <span class="text-6xl font-bold text-gray-800 rotate-90">END</span>
+                 </div>
+
+            </div>
+        </section>
+
+        <!-- Projects Section (Vertical Scrub) -->
+        <section id="work" class="py-32 px-6 md:px-20 bg-black">
+            <div class="mb-20">
+                <span class="text-neon font-mono text-xs border border-neon px-2 py-1 rounded mb-4 inline-block">02 — PROJETS</span>
+                <h2 class="text-4xl md:text-6xl font-bold">Sélection <br> récente.</h2>
+            </div>
+
+            <!-- Projet 1 -->
+            <div class="project-card group relative w-full mb-32 grid md:grid-cols-12 gap-8 items-center">
+                <div class="md:col-span-7 relative w-full aspect-[16/9] md:aspect-[21/9] bg-neutral-900 overflow-hidden rounded-sm border border-white/10 project-image-wrapper">
+                    <!-- Placeholder Image -->
+                    <img src="img/momotas.jpg" alt="Momotas" class="project-image w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
+                    <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all duration-500"></div>
+                </div>
+                <div class="md:col-span-5 md:pl-12 z-10">
+                    <span class="text-gray-500 font-mono text-xs">WEB EXPERIENCE</span>
+                    <h3 class="text-5xl md:text-7xl font-bold my-4 uppercase tracking-tighter group-hover:text-neon transition-colors duration-500">Momotas Bird</h3>
+                    <p class="text-gray-400 mb-8 max-w-md leading-relaxed">
+                        Une exploration visuelle de la faune malgache. Utilisation de WebGL pour la génération de terrain et de GSAP pour les transitions de scènes immersives.
+                    </p>
+                    <a href="#" class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest border-b border-white pb-1 hover:border-neon hover:text-neon transition-all">
+                        Voir le projet <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Projet 2 (Layout inversé) -->
+            <div class="project-card group relative w-full mb-32 grid md:grid-cols-12 gap-8 items-center">
+                <div class="md:col-span-5 md:order-1 md:pr-12 z-10 text-left md:text-right">
+                    <span class="text-gray-500 font-mono text-xs">DESKTOP APP</span>
+                    <h3 class="text-5xl md:text-7xl font-bold my-4 uppercase tracking-tighter group-hover:text-neon transition-colors duration-500">Voary</h3>
+                    <p class="text-gray-400 mb-8 max-w-md leading-relaxed md:ml-auto">
+                        Suite logicielle pour la gestion d'entreprises agro-alimentaires. Focus sur l'UX complexe et la visualisation de données en temps réel.
+                    </p>
+                    <div class="flex gap-4 justify-start md:justify-end mb-6">
+                        <span class="text-[10px] border border-white/20 px-2 py-1 rounded text-gray-400">PYTHON</span>
+                        <span class="text-[10px] border border-white/20 px-2 py-1 rounded text-gray-400">PYQT</span>
+                    </div>
+                </div>
+                <div class="md:col-span-7 md:order-2 relative w-full aspect-[16/9] md:aspect-[21/9] bg-neutral-900 overflow-hidden rounded-sm border border-white/10 project-image-wrapper">
+                    <img src="img/voary.jpg" alt="Voary" class="project-image w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
+                </div>
+            </div>
+
+            <!-- Projet 3 -->
+            <div class="project-card group relative w-full mb-32 grid md:grid-cols-12 gap-8 items-center">
+                <div class="md:col-span-7 relative w-full aspect-[16/9] md:aspect-[21/9] bg-neutral-900 overflow-hidden rounded-sm border border-white/10 project-image-wrapper">
+                    <img src="img/isabelle.jpg" alt="Isabelle" class="project-image w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
+                </div>
+                <div class="md:col-span-5 md:pl-12 z-10">
+                    <span class="text-gray-500 font-mono text-xs">ADMIN DASHBOARD</span>
+                    <h3 class="text-5xl md:text-7xl font-bold my-4 uppercase tracking-tighter group-hover:text-neon transition-colors duration-500">Isabelle</h3>
+                    <p class="text-gray-400 mb-8 max-w-md leading-relaxed">
+                        Refonte complète d'un système de gestion CRM. Architecture micro-services et dashboard interactif avec graphiques en temps réel.
+                    </p>
+                    <a href="#" class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest border-b border-white pb-1 hover:border-neon hover:text-neon transition-all">
+                        Voir le projet <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Footer / Contact -->
+        <footer class="min-h-screen bg-neon text-black flex flex-col justify-center items-center relative overflow-hidden px-6">
+            <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path d="M0 100 C 20 0 50 0 100 100 Z" fill="black" />
+                </svg>
+            </div>
+
+            <h2 class="relative z-10 text-[15vw] leading-[0.8] font-bold uppercase text-center tracking-tighter mb-12 mix-blend-multiply">
+                Let's<br>Work<br>Together
+            </h2>
+
+            <div class="relative z-10 text-center space-y-6">
+                <a href="mailto:rado.harvester@gmail.com" class="magnetic-btn inline-block text-2xl md:text-4xl font-bold underline decoration-2 underline-offset-8 hover:text-white transition-colors">
+                    rado.harvester@gmail.com
+                </a>
+                <div class="flex justify-center gap-6 mt-8">
+                    <a href="#" class="hover:scale-110 transition-transform"><i data-lucide="github" class="w-6 h-6"></i></a>
+                    <a href="#" class="hover:scale-110 transition-transform"><i data-lucide="linkedin" class="w-6 h-6"></i></a>
+                    <a href="#" class="hover:scale-110 transition-transform"><i data-lucide="twitter" class="w-6 h-6"></i></a>
+                </div>
+            </div>
+
+            <div class="absolute bottom-6 text-black font-mono text-xs uppercase tracking-widest">
+                © 2026 Rado Harivelo
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        // Initialisation des icônes
+        lucide.createIcons();
+
+        // --- 1. CONFIGURATION SMOOTH SCROLL (LENIS) ---
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 1,
+            smoothTouch: false,
+            touchMultiplier: 2,
+        });
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // Intégration Lenis avec ScrollTrigger
+        gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+        
+        // --- 2. CUSTOM CURSOR LOGIC ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorStroke = document.querySelector('.cursor-stroke');
+        const magneticBtns = document.querySelectorAll('.magnetic-btn');
+
+        let mouseX = 0, mouseY = 0;
+        let cursorX = 0, cursorY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        // Animation fluide du curseur (Lerp)
+        function animateCursor() {
+            const dt = 1.0 - Math.pow(1.0 - 0.15, gsap.ticker.deltaRatio()); 
+            cursorX += (mouseX - cursorX) * dt;
+            cursorY += (mouseY - cursorY) * dt;
+            
+            gsap.set(cursorDot, { x: cursorX, y: cursorY });
+            gsap.set(cursorStroke, { x: cursorX, y: cursorY });
+            
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        // Effet Magnétique sur les boutons
+        magneticBtns.forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                gsap.to(cursorStroke, { scale: 1.5, borderColor: 'transparent', backgroundColor: 'rgba(255,255,255,0.1)', duration: 0.3 });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(cursorStroke, { scale: 1, borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'transparent', duration: 0.3 });
+            });
+        });
+
+        // --- 3. PRELOADER & HERO ANIMATION ---
+        const tlLoader = gsap.timeline();
+
+        // Animation de sortie du loader
+        tlLoader.to(".loader-screen", {
+            duration: 1,
+            clipPath: "polygon(0 0, 100% 0, 100% 0%, 0% 0%)",
+            ease: "power4.inOut"
+        })
+        // Animation Hero Text (Reveal par ligne)
+        .from(".hero-title .overflow-hidden span", {
+            y: "100%",
+            opacity: 0,
+            duration: 1.5,
+            stagger: 0.2,
+            ease: "power4.out"
+        }, "-=0.5")
+        .from(".hero-sub", {
+            y: 20,
+            opacity: 0,
+            duration: 1,
+            ease: "power3.out"
+        }, "-=1");
+
+        // --- 4. MARQUEE INFINITE SCROLL ---
+        gsap.to(".marquee-item", {
+            xPercent: -100,
+            repeat: -1,
+            duration: 20,
+            ease: "linear"
+        });
+        // Clone pour effet infini si besoin, ou ajustement durée selon le contenu
+
+        // --- 5. HORIZONTAL SCROLL SECTION (EXPERTISE) ---
+        // Calculer la largeur totale à scroller
+        const horizontalSection = document.getElementById("expertise");
+        const track = document.querySelector(".horizontal-track");
+        
+        // Seulement sur desktop pour éviter les bugs de touch
+        if (window.innerWidth > 768) {
+            let scrollTween = gsap.to(track, {
+                x: () => -(track.scrollWidth - document.documentElement.clientWidth) + "px",
+                ease: "none",
+                scrollTrigger: {
+                    trigger: horizontalSection,
+                    pin: true,
+                    scrub: 1,
+                    start: "top top",
+                    end: () => "+=" + (track.scrollWidth - document.documentElement.clientWidth),
+                    invalidateOnRefresh: true
+                }
+            });
+        }
+
+        // Animation des cartes skills quand elles passent au centre
+        gsap.utils.toArray(".skill-card").forEach(card => {
+            gsap.from(card, {
+                y: 50,
+                opacity: 0,
+                duration: 0.5,
+                scrollTrigger: {
+                    trigger: card,
+                    containerAnimation: scrollTween, // Lier à l'anim horizontale
+                    start: "left center",
+                }
+            });
+        });
+
+        // --- 6. PROJECTS PARALLAX & REVEAL ---
+        gsap.utils.toArray(".project-card").forEach((card, i) => {
+            const imgWrapper = card.querySelector(".project-image-wrapper");
+            const img = card.querySelector("img");
+            
+            // Parallax de l'image
+            gsap.to(img, {
+                yPercent: -15,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: card,
+                    scrub: true,
+                    start: "top bottom",
+                    end: "bottom top"
+                }
+            });
+
+            // Apparition du texte
+            gsap.from(card.querySelector("h3"), {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                ease: "power3.out",
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                }
+            });
+        });
+
+        // --- 7. UTILITAIRES ---
+        // Style Stroke Text via CSS variable pour la compatibilité
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .stroke-text {
+                -webkit-text-stroke: 1px rgba(255, 255, 255, 0.3);
+            }
+        `;
+        document.head.appendChild(style);
+
+    </script>
+</body>
+</html>
